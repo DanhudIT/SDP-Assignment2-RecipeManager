@@ -8,7 +8,12 @@ public static class ConsoleMenu
 {
     public static void PrintMenu(IRecipeManager manager)
     {
-        Console.Clear();
+        // Required for run and debug to work, by checking if running in a different terminal feed.
+        if (!Console.IsOutputRedirected)
+        {
+            Console.Clear();
+        }
+        
         Console.WriteLine("RECIPE MANAGEMENT SYSTEM");
         Console.WriteLine($"Recipes: {manager.RecipeCount} | " +
             $"Shopping items: {manager.ShoppingItemCount} | " +
