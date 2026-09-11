@@ -72,14 +72,29 @@ public sealed class RecipeManager : IRecipeManager
         return RecipeDatabase.Remove(recipeId);
     }
 
-    public int AddIngredientsToShoppingList(int recipeId) =>
-        throw new NotImplementedException("Part A: implement AddIngredientsToShoppingList.");
+    public int AddIngredientsToShoppingList(int recipeId)
+    {
+        int ingredientCount = 0;
+        foreach (Recipe indexedRecipe in RecipeDatabase.Values)
+        {
+            foreach(string ingredient in indexedRecipe.Ingredients)
+            {
+                ShoppingList.Add(ingredient);
+                ingredientCount += 1;
+            }
+        }
+        return ingredientCount;
+    }
 
-    public IReadOnlyList<string> GetShoppingList() =>
-        throw new NotImplementedException("Part A: implement GetShoppingList.");
+    public IReadOnlyList<string> GetShoppingList()
+    {
+        return ShoppingList;
+    }
 
-    public void ClearShoppingList() =>
-        throw new NotImplementedException("Part A: implement ClearShoppingList.");
+    public void ClearShoppingList()
+    {
+        ShoppingList.Clear();
+    }
 
     public bool AddRecipeToCookingPlan(int recipeId) =>
         throw new NotImplementedException("Part A: implement AddRecipeToCookingPlan.");
