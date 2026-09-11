@@ -11,11 +11,29 @@ namespace RecipeManagement.Core;
 public sealed class RecipeManager : IRecipeManager
 {
     // TODO Part A: add your private collection fields here.
+    public Dictionary<int, Recipe> RecipeDatabase {get; private set; } = new();
+    public List<string> ShoppingList {get; private set; } = new();
+    public LinkedList<int> CookingPlan {get; private set; } = new();
+    public Stack<int> RemovedRecipeHistory {get; private set; } = new();
+    public Queue<string> InstructionQueue {get; private set; } = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
         // TODO Part A: validate recipes and build Dictionary<int, Recipe>.
-        _ = recipes;
+        foreach(Recipe recipeImport in recipes)
+        {
+            // to validate the recipe for negatives and duplicates
+            if (recipeImport.Id < 0)
+            {
+                Console.WriteLine($"Negative recipe ID: Negative Recipe ID cannot be negative!");
+                continue;
+            }
+            bool validRecipe = RecipeDatabase.TryAdd(recipeImport.Id, recipeImport);
+            if(!validRecipe)
+            {
+                Console.WriteLine($"Duplicate Recipe ID: {recipeImport.Id} already exists, unable to be imported!");
+            }
+        }
     }
 
     public int RecipeCount => 0;
@@ -24,14 +42,35 @@ public sealed class RecipeManager : IRecipeManager
     public int PendingInstructionCount => 0;
     public int RemovedRecipeCount => 0;
 
-    public bool AddRecipe(Recipe recipe) =>
-        throw new NotImplementedException("Part A: implement AddRecipe.");
+    public bool AddRecipe(Recipe recipe)
+    {
+        bool validRecipe = false;            
+        if (recipe.Id < 0)
+        {
+            Console.WriteLine($"Negative recipe ID: Negative Recipe ID cannot be negative!");
+            return validRecipe;
+        }
 
-    public Recipe? FindRecipe(int recipeId) =>
-        throw new NotImplementedException("Part A: implement FindRecipe.");
+        validRecipe = RecipeDatabase.TryAdd(recipe.Id, recipe);
 
-    public bool RemoveRecipe(int recipeId) =>
-        throw new NotImplementedException("Part A: implement RemoveRecipe.");
+        if(!validRecipe)
+        {
+            Console.WriteLine($"Duplicate Recipe ID: {recipe.Id} already exists, unable to be imported!");
+            return validRecipe;
+        }
+        return validRecipe;
+    }
+
+    public Recipe? FindRecipe(int recipeId)
+    {
+        RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe);
+        return validRecipe;
+    }
+
+    public bool RemoveRecipe(int recipeId)
+    {
+        return RecipeDatabase.Remove(recipeId);
+    }
 
     public int AddIngredientsToShoppingList(int recipeId) =>
         throw new NotImplementedException("Part A: implement AddIngredientsToShoppingList.");
