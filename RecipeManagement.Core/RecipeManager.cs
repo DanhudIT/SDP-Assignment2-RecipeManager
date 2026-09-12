@@ -17,6 +17,7 @@ public sealed class RecipeManager : IRecipeManager
     public Stack<int> RemovedRecipeHistory {get; private set; } = new();
     public Queue<string> InstructionQueue {get; private set; } = new();
 
+    // TODO error checking.
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
         // TODO Part A: validate recipes and build Dictionary<int, Recipe>.
@@ -36,12 +37,13 @@ public sealed class RecipeManager : IRecipeManager
         }
     }
 
-    public int RecipeCount => 0;
-    public int ShoppingItemCount => 0;
-    public int CookingPlanCount => 0;
+    public int RecipeCount => RecipeDatabase.Count;
+    public int ShoppingItemCount => ShoppingList.Count;
+    public int CookingPlanCount => CookingPlan.Count;
     public int PendingInstructionCount => 0;
-    public int RemovedRecipeCount => 0;
+    public int RemovedRecipeCount => RemovedRecipeHistory.Count;
 
+    // TODO error checking.
     public bool AddRecipe(Recipe recipe)
     {
         bool validRecipe = false;            
@@ -61,31 +63,35 @@ public sealed class RecipeManager : IRecipeManager
         return validRecipe;
     }
 
+    // TODO error checking.
     public Recipe? FindRecipe(int recipeId)
     {
-        RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe);
+        if(!RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe))
+            throw new ArgumentException($"Null:{recipeId} TODO error");
         return validRecipe;
     }
 
+    // TODO error checking.
     public bool RemoveRecipe(int recipeId)
     {
         return RecipeDatabase.Remove(recipeId);
     }
 
+    // TODO error checking.
+    // Find recipe already has the recipe call and error handling, 
     public int AddIngredientsToShoppingList(int recipeId)
     {
         int ingredientCount = 0;
-        foreach (Recipe indexedRecipe in RecipeDatabase.Values)
+        Recipe? indexedRecipe = FindRecipe(recipeId);
+        foreach(string ingredient in indexedRecipe?.Ingredients)
         {
-            foreach(string ingredient in indexedRecipe.Ingredients)
-            {
-                ShoppingList.Add(ingredient);
-                ingredientCount += 1;
-            }
+            ShoppingList.Add(ingredient);
+            ingredientCount += 1;
         }
         return ingredientCount;
     }
 
+    // TODO error checking.
     public IReadOnlyList<string> GetShoppingList()
     {
         return ShoppingList;
@@ -96,21 +102,67 @@ public sealed class RecipeManager : IRecipeManager
         ShoppingList.Clear();
     }
 
-    public bool AddRecipeToCookingPlan(int recipeId) =>
-        throw new NotImplementedException("Part A: implement AddRecipeToCookingPlan.");
 
-    public bool RemoveRecipeFromCookingPlan(int recipeId) =>
-        throw new NotImplementedException("Part A: implement RemoveRecipeFromCookingPlan.");
+    // TODO error checking.
+    public bool AddRecipeToCookingPlan(int recipeId)
+    {
+        bool taskCompletion = false;
+        if(FindRecipe(recipeId) is Recipe)
+        {
+            if(!CookingPlan.Contains(recipeId))
+            {
+                CookingPlan.AddLast(recipeId);
+                taskCompletion = true;
+            }
+            else
+            {
+                throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
+            }
+        }        
+        return taskCompletion;
+    }
 
-    public bool RestoreLastRemovedRecipe() =>
-        throw new NotImplementedException("Part A: implement RestoreLastRemovedRecipe.");
+    // TODO
+    public bool RemoveRecipeFromCookingPlan(int recipeId)
+    {
+        bool taskCompletion = false;
+        if(CookingPlan.Remove(recipeId))
+        {
+            RemovedRecipeHistory.Push(recipeId);
+        }
+        else
+        {
+            throw new ArgumentException($"Invalid Recipe ID: {recipeId} not in Cooking Plan!");
+        }
+        return taskCompletion;
+    }
 
-    public int? PeekLastRemovedRecipe() =>
-        throw new NotImplementedException("Part A: implement PeekLastRemovedRecipe.");
+    public bool RestoreLastRemovedRecipe()     
+    {
+        bool taskCompletion = false;
+        if(RemovedRecipeHistory.TryPop(out int recipeId))
+        {
+            AddRecipeToCookingPlan(recipeId);
+        }
+        else
+        {
+            throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
+        }
+        return taskCompletion;
+    }
 
-    public IReadOnlyList<int> GetCookingPlan() =>
-        throw new NotImplementedException("Part A: implement GetCookingPlan.");
+    public int? PeekLastRemovedRecipe()
+    {
+        if (!RemovedRecipeHistory.TryPeek(out int recipeId))
+            // TODO
+            throw new ArgumentException($"Error:{recipeId} TODO error");
+        return recipeId;
+    }
 
+    public IReadOnlyList<int> GetCookingPlan()
+    {
+        return CookingPlan.ToList();
+    }
     public bool StartCooking(int recipeId) =>
         throw new NotImplementedException("Part A: implement StartCooking.");
 
