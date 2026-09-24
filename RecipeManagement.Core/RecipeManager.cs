@@ -129,6 +129,7 @@ public sealed class RecipeManager : IRecipeManager
         if(CookingPlan.Remove(recipeId))
         {
             RemovedRecipeHistory.Push(recipeId);
+            taskCompletion = true;
         }
         else
         {
@@ -143,19 +144,13 @@ public sealed class RecipeManager : IRecipeManager
         if(RemovedRecipeHistory.TryPop(out int recipeId))
         {
             AddRecipeToCookingPlan(recipeId);
-        }
-        else
-        {
-            throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
+            taskCompletion = true;
         }
         return taskCompletion;
     }
-
     public int? PeekLastRemovedRecipe()
     {
-        if (!RemovedRecipeHistory.TryPeek(out int recipeId))
-            // TODO
-            throw new ArgumentException($"Error:{recipeId} TODO error");
+        RemovedRecipeHistory.TryPeek(out int recipeId);
         return recipeId;
     }
 
@@ -163,14 +158,47 @@ public sealed class RecipeManager : IRecipeManager
     {
         return CookingPlan.ToList();
     }
-    public bool StartCooking(int recipeId) =>
-        throw new NotImplementedException("Part A: implement StartCooking.");
 
-    public string? PeekNextInstruction() =>
-        throw new NotImplementedException("Part A: implement PeekNextInstruction.");
+    public bool StartCooking(int recipeId)
+    {
+        bool taskCompletion = false;
+        Recipe? currentRecipe = FindRecipe(recipeId);
 
-    public string? CompleteNextInstruction() =>
-        throw new NotImplementedException("Part A: implement CompleteNextInstruction.");
+        if(currentRecipe is not null)
+        {
+            foreach (string instruction in currentRecipe.Instructions)
+            {
+                InstructionQueue.Enqueue(instruction);
+            }
+            taskCompletion = true;            
+        }
+
+        return taskCompletion;
+    }
+
+    public string? PeekNextInstruction()
+    {
+        InstructionQueue.TryPeek(out string? nextInstruction);
+        return nextInstruction;
+    }
+
+    public string? CompleteNextInstruction()
+    // current interpretation: to remove the current instruction and output the result for interface to catch.
+    // previous interpretation: remove current item in queue and print next item, if there is no next recipe then will call start cooking to attempt another recipe.
+    {
+        InstructionQueue.TryDequeue(out string? nextInstruction);
+        // if(InstructionQueue.TryDequeue(out string? nextInstruction))
+        // {
+        //     nextInstruction = PeekNextInstruction();
+        //     if(PeekNextInstruction() is null)
+        //     {
+        //         RemoveRecipeFromCookingPlan((int) CookingPlan.First.Value);
+        //         StartCooking((int) CookingPlan.First.Value);
+        //         nextInstruction = PeekNextInstruction();
+        //     }
+        // }
+        return nextInstruction;
+    }
 
     public IReadOnlyList<Recipe> SearchByTitle(string searchText) =>
         throw new NotImplementedException("Part B: implement SearchByTitle.");
