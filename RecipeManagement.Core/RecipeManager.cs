@@ -43,7 +43,6 @@ public sealed class RecipeManager : IRecipeManager
     public int PendingInstructionCount => 0;
     public int RemovedRecipeCount => RemovedRecipeHistory.Count;
 
-    // TODO error checking.
     public bool AddRecipe(Recipe recipe)
     {
         bool validRecipe = false;            
@@ -54,7 +53,7 @@ public sealed class RecipeManager : IRecipeManager
         }
 
         validRecipe = RecipeDatabase.TryAdd(recipe.Id, recipe);
-
+        
         if(!validRecipe)
         {
             Console.WriteLine($"Duplicate Recipe ID: {recipe.Id} already exists, unable to be imported!");
@@ -63,27 +62,25 @@ public sealed class RecipeManager : IRecipeManager
         return validRecipe;
     }
 
-    // TODO error checking.
     public Recipe? FindRecipe(int recipeId)
     {
-        if(!RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe))
-            throw new ArgumentException($"Null:{recipeId} TODO error");
+        RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe);
         return validRecipe;
     }
 
-    // TODO error checking.
     public bool RemoveRecipe(int recipeId)
     {
         return RecipeDatabase.Remove(recipeId);
     }
 
-    // TODO error checking.
-    // Find recipe already has the recipe call and error handling, 
+    // Find recipe already has the recipe call
     public int AddIngredientsToShoppingList(int recipeId)
     {
         int ingredientCount = 0;
         Recipe? indexedRecipe = FindRecipe(recipeId);
-        foreach(string ingredient in indexedRecipe?.Ingredients)
+        if(indexedRecipe is null)
+            return ingredientCount;
+        foreach(string ingredient in indexedRecipe.Ingredients)
         {
             ShoppingList.Add(ingredient);
             ingredientCount += 1;
@@ -91,7 +88,6 @@ public sealed class RecipeManager : IRecipeManager
         return ingredientCount;
     }
 
-    // TODO error checking.
     public IReadOnlyList<string> GetShoppingList()
     {
         return ShoppingList;
@@ -114,10 +110,10 @@ public sealed class RecipeManager : IRecipeManager
                 CookingPlan.AddLast(recipeId);
                 taskCompletion = true;
             }
-            else
-            {
-                throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
-            }
+            // else
+            // {
+            //     throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
+            // }
         }        
         return taskCompletion;
     }
@@ -131,10 +127,10 @@ public sealed class RecipeManager : IRecipeManager
             RemovedRecipeHistory.Push(recipeId);
             taskCompletion = true;
         }
-        else
-        {
-            throw new ArgumentException($"Invalid Recipe ID: {recipeId} not in Cooking Plan!");
-        }
+        // else
+        // {
+        //     throw new ArgumentException($"Invalid Recipe ID: {recipeId} not in Cooking Plan!");
+        // }
         return taskCompletion;
     }
 
@@ -183,20 +179,9 @@ public sealed class RecipeManager : IRecipeManager
     }
 
     public string? CompleteNextInstruction()
-    // current interpretation: to remove the current instruction and output the result for interface to catch.
-    // previous interpretation: remove current item in queue and print next item, if there is no next recipe then will call start cooking to attempt another recipe.
+    // To remove the current instruction and output the result for interface to catch.
     {
         InstructionQueue.TryDequeue(out string? nextInstruction);
-        // if(InstructionQueue.TryDequeue(out string? nextInstruction))
-        // {
-        //     nextInstruction = PeekNextInstruction();
-        //     if(PeekNextInstruction() is null)
-        //     {
-        //         RemoveRecipeFromCookingPlan((int) CookingPlan.First.Value);
-        //         StartCooking((int) CookingPlan.First.Value);
-        //         nextInstruction = PeekNextInstruction();
-        //     }
-        // }
         return nextInstruction;
     }
 
