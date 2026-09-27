@@ -338,7 +338,78 @@ public sealed class RecipeManagerTests
         Assert.Empty(manager.RemovedRecipeHistory);
     }
 
-    //Todo
-    //PeekNextInstruction()
-    //CompleteNextInstruction()
+    [Fact]
+    public void StartCooking_ReturnTrue_WhenValidRecipeId()
+    {
+        var manager = CreateManager();
+        
+        bool result = manager.StartCooking(10);
+        string instruction1 = manager.InstructionQueue.Dequeue();
+
+        Assert.True(result);
+        Assert.Equal("First step", instruction1);
+        Assert.NotEmpty(manager.InstructionQueue);
+    }
+
+    [Fact]
+    public void StartCooking_ReturnFalse_WhenInvalidRecipeId()
+    {
+        var manager = CreateManager();
+        
+        bool result = manager.StartCooking(30);
+
+        Assert.False(result);
+        Assert.Empty(manager.InstructionQueue);
+    }
+
+    [Fact]
+    public void PeekNextInstruction_ReturnString_WhenNextInstructionAvailable()
+    {
+        var manager = CreateManager();
+        manager.StartCooking(10);
+
+        string? result = manager.PeekNextInstruction();
+
+        Assert.Equal("First step", result);
+    }
+
+    [Fact]
+    public void PeekNextInstruction_ReturnNull_WhenNextInstructionUnAvailable()
+    {
+        var manager = CreateManager();
+        manager.StartCooking(10);
+        manager.InstructionQueue.Dequeue();
+        manager.InstructionQueue.Dequeue();
+
+        string? result = manager.PeekNextInstruction();
+
+        Assert.Null(result);
+    }
+
+
+    [Fact]
+    public void CompleteNextInstruction_ReturnString_WhenNextInstructionAvailable()
+    {
+        var manager = CreateManager();
+        manager.StartCooking(10);
+
+        string? result1 = manager.CompleteNextInstruction();
+        string? result2 = manager.CompleteNextInstruction();
+
+        Assert.Equal("First step", result1);
+        Assert.Equal("Second step", result2);
+    }
+
+    [Fact]
+    public void CompleteNextInstruction_ReturnNull_WhenNextInstructionUnAvailable()
+    {
+        var manager = CreateManager();
+        manager.StartCooking(10);
+        manager.InstructionQueue.Dequeue();
+        manager.InstructionQueue.Dequeue();
+
+        string? result = manager.CompleteNextInstruction();
+
+        Assert.Null(result);
+    }
 }
