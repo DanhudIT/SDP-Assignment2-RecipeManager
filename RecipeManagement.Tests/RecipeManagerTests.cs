@@ -258,19 +258,87 @@ public sealed class RecipeManagerTests
         Assert.DoesNotContain(30, manager.RemovedRecipeHistory);
     }
     
-    //TODO
     [Fact]
     public void RestoreLastRemovedRecipe_ReturnTrue_WhenValidRecipe()
     {
         var manager = CreateManager();
         manager.AddRecipeToCookingPlan(10);
         manager.AddRecipeToCookingPlan(20);
+        manager.RemoveRecipeFromCookingPlan(10);
 
-        bool result = manager.RemoveRecipeFromCookingPlan(30);
+        bool result = manager.RestoreLastRemovedRecipe();
+
+        Assert.True(result);
+        Assert.Contains(10, manager.CookingPlan);
+        Assert.DoesNotContain(10, manager.RemovedRecipeHistory);
+        Assert.Empty(manager.RemovedRecipeHistory);
+    }
+
+    [Fact]
+    public void RestoreLastRemovedRecipe_ReturnFalse_WhenNothingInStack()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.AddRecipeToCookingPlan(20);
+        manager.RemoveRecipeFromCookingPlan(10);
+        manager.RestoreLastRemovedRecipe();
+
+        bool result = manager.RestoreLastRemovedRecipe();
 
         Assert.False(result);
-        Assert.Contains(20, manager.CookingPlan);
-        Assert.DoesNotContain(30, manager.CookingPlan);
-        Assert.DoesNotContain(30, manager.RemovedRecipeHistory);
+        Assert.Contains(10, manager.CookingPlan);
+        Assert.DoesNotContain(10, manager.RemovedRecipeHistory);
+        Assert.Empty(manager.RemovedRecipeHistory);
     }
+
+    [Fact]
+    public void PeekLastRemovedRecipe_ReturnInt_WhenStackHasRemovedRecipe()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.AddRecipeToCookingPlan(20);
+        manager.RemoveRecipeFromCookingPlan(10);
+
+        int? result = manager.PeekLastRemovedRecipe();
+
+        Assert.Equal(10, result);
+        Assert.Contains(10, manager.RemovedRecipeHistory);
+        Assert.DoesNotContain(10, manager.CookingPlan);
+        Assert.NotEmpty(manager.RemovedRecipeHistory);
+    }
+
+    [Fact]
+    public void PeekLastRemovedRecipe_ReturnNull_WhenStackHasNoRemovedRecipe()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.AddRecipeToCookingPlan(20);
+        manager.RemoveRecipeFromCookingPlan(10);
+        manager.RestoreLastRemovedRecipe();
+
+        int? result = manager.PeekLastRemovedRecipe();
+
+        Assert.Null(result);
+        Assert.Contains(10, manager.CookingPlan);
+        Assert.Empty(manager.RemovedRecipeHistory);
+    }
+
+    [Fact]
+    public void GetCookingPlan_ReturnList()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.AddRecipeToCookingPlan(20);
+
+        var result = manager.GetCookingPlan();
+
+        Assert.Contains(10, result);
+        Assert.Contains(20, result);
+        Assert.Equal(2, result.Count);
+        Assert.Empty(manager.RemovedRecipeHistory);
+    }
+
+    //Todo
+    //PeekNextInstruction()
+    //CompleteNextInstruction()
 }
