@@ -146,7 +146,7 @@ public sealed class RecipeManager : IRecipeManager
     }
     public int? PeekLastRemovedRecipe()
     {
-        RemovedRecipeHistory.TryPeek(out int recipeId);
+        int? recipeId = RemovedRecipeHistory.TryPeek(out int result) ? result : null;
         return recipeId;
     }
 
