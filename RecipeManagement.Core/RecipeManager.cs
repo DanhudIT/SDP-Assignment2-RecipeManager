@@ -10,17 +10,15 @@ namespace RecipeManagement.Core;
 /// </summary>
 public sealed class RecipeManager : IRecipeManager
 {
-    // TODO Part A: add your private collection fields here.
+    // Private Collections
     public Dictionary<int, Recipe> RecipeDatabase {get; private set; } = new();
     public List<string> ShoppingList {get; private set; } = new();
     public LinkedList<int> CookingPlan {get; private set; } = new();
     public Stack<int> RemovedRecipeHistory {get; private set; } = new();
     public Queue<string> InstructionQueue {get; private set; } = new();
 
-    // TODO error checking.
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
-        // TODO Part A: validate recipes and build Dictionary<int, Recipe>.
         foreach(Recipe recipeImport in recipes)
         {
             // to validate the recipe for negatives and duplicates
@@ -73,7 +71,6 @@ public sealed class RecipeManager : IRecipeManager
         return RecipeDatabase.Remove(recipeId);
     }
 
-    // Find recipe already has the recipe call
     public int AddIngredientsToShoppingList(int recipeId)
     {
         int ingredientCount = 0;
@@ -99,7 +96,6 @@ public sealed class RecipeManager : IRecipeManager
     }
 
 
-    // TODO error checking.
     public bool AddRecipeToCookingPlan(int recipeId)
     {
         bool taskCompletion = false;
@@ -110,15 +106,10 @@ public sealed class RecipeManager : IRecipeManager
                 CookingPlan.AddLast(recipeId);
                 taskCompletion = true;
             }
-            // else
-            // {
-            //     throw new ArgumentException($"Duplicate Recipe ID: {recipeId} already exists in the cooking list!");
-            // }
         }        
         return taskCompletion;
     }
 
-    // TODO
     public bool RemoveRecipeFromCookingPlan(int recipeId)
     {
         bool taskCompletion = false;
@@ -127,10 +118,6 @@ public sealed class RecipeManager : IRecipeManager
             RemovedRecipeHistory.Push(recipeId);
             taskCompletion = true;
         }
-        // else
-        // {
-        //     throw new ArgumentException($"Invalid Recipe ID: {recipeId} not in Cooking Plan!");
-        // }
         return taskCompletion;
     }
 
@@ -144,6 +131,7 @@ public sealed class RecipeManager : IRecipeManager
         }
         return taskCompletion;
     }
+
     public int? PeekLastRemovedRecipe()
     {
         int? recipeId = RemovedRecipeHistory.TryPeek(out int result) ? result : null;
@@ -179,7 +167,7 @@ public sealed class RecipeManager : IRecipeManager
     }
 
     public string? CompleteNextInstruction()
-    // To remove the current instruction and output the result for interface to catch.
+
     {
         InstructionQueue.TryDequeue(out string? nextInstruction);
         return nextInstruction;
@@ -206,10 +194,3 @@ public sealed class RecipeManager : IRecipeManager
     public IReadOnlyList<int> GetSavedRecipes() =>
         throw new NotImplementedException("Part B: implement GetSavedRecipes.");
 }
-
-//TODO
-// Dictionary<int, Recipe>
-// List<string>
-// LinkedList<int>
-// Stack<int>
-// Queue<string>
