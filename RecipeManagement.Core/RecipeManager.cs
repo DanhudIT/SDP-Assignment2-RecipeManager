@@ -10,12 +10,12 @@ namespace RecipeManagement.Core;
 /// </summary>
 public sealed class RecipeManager : IRecipeManager
 {
-    // Private Collections
-    private Dictionary<int, Recipe> RecipeDatabase {get; set; } = new();
-    private List<string> ShoppingList {get; set; } = new();
-    private LinkedList<int> CookingPlan {get; set; } = new();
-    private Stack<int> RemovedRecipeHistory {get; set; } = new();
-    private Queue<string> InstructionQueue {get; set; } = new();
+    // Private Collection fields
+    private Dictionary<int, Recipe> RecipeDatabase = new();
+    private List<string> ShoppingList = new();
+    private LinkedList<int> CookingPlan = new();
+    private Stack<int> RemovedRecipeHistory = new();
+    private Queue<string> InstructionQueue = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
@@ -139,7 +139,6 @@ public sealed class RecipeManager : IRecipeManager
             {
                 taskCompletion = true;
             }
-            
         }
         return taskCompletion;
     }
