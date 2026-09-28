@@ -11,11 +11,11 @@ namespace RecipeManagement.Core;
 public sealed class RecipeManager : IRecipeManager
 {
     // Private Collection fields
-    private Dictionary<int, Recipe> RecipeDatabase = new();
-    private List<string> ShoppingList = new();
-    private LinkedList<int> CookingPlan = new();
-    private Stack<int> RemovedRecipeHistory = new();
-    private Queue<string> InstructionQueue = new();
+    private Dictionary<int, Recipe> recipeDatabase = new();
+    private List<string> shoppingList = new();
+    private LinkedList<int> cookingPlan = new();
+    private Stack<int> removedRecipeHistory = new();
+    private Queue<string> instructionQueue = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
@@ -33,7 +33,7 @@ public sealed class RecipeManager : IRecipeManager
                 throw new ArgumentException($"Blank Title: Recipe has no title, unable to be imported!");
             }
 
-            bool validRecipe = RecipeDatabase.TryAdd(recipeImport.Id, recipeImport);
+            bool validRecipe = recipeDatabase.TryAdd(recipeImport.Id, recipeImport);
             if(!validRecipe)
             {
                 throw new ArgumentException($"Duplicate Recipe ID: {recipeImport.Id} already exists, unable to be imported!");
@@ -41,11 +41,11 @@ public sealed class RecipeManager : IRecipeManager
         }
     }
 
-    public int RecipeCount => RecipeDatabase.Count;
-    public int ShoppingItemCount => ShoppingList.Count;
-    public int CookingPlanCount => CookingPlan.Count;
-    public int PendingInstructionCount => InstructionQueue.Count;
-    public int RemovedRecipeCount => RemovedRecipeHistory.Count;
+    public int RecipeCount => recipeDatabase.Count;
+    public int ShoppingItemCount => shoppingList.Count;
+    public int CookingPlanCount => cookingPlan.Count;
+    public int PendingInstructionCount => instructionQueue.Count;
+    public int RemovedRecipeCount => removedRecipeHistory.Count;
 
     public bool AddRecipe(Recipe recipe)
     {
@@ -61,21 +61,21 @@ public sealed class RecipeManager : IRecipeManager
             return false;
         }
 
-        return RecipeDatabase.TryAdd(recipe.Id, recipe);
+        return recipeDatabase.TryAdd(recipe.Id, recipe);
     }
 
     public Recipe? FindRecipe(int recipeId)
     {
-        RecipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe);
+        recipeDatabase.TryGetValue(recipeId, out Recipe? validRecipe);
         return validRecipe;
     }
 
     public bool RemoveRecipe(int recipeId)
     {
         bool taskCompletion = false;
-        if(!CookingPlan.Contains(recipeId))
+        if(!cookingPlan.Contains(recipeId))
         {
-            taskCompletion = RecipeDatabase.Remove(recipeId);
+            taskCompletion = recipeDatabase.Remove(recipeId);
         }
         return taskCompletion;
     }
@@ -88,7 +88,7 @@ public sealed class RecipeManager : IRecipeManager
             return ingredientCount;
         foreach(string ingredient in indexedRecipe.Ingredients)
         {
-            ShoppingList.Add(ingredient);
+            shoppingList.Add(ingredient);
             ingredientCount += 1;
         }
         return ingredientCount;
@@ -96,12 +96,12 @@ public sealed class RecipeManager : IRecipeManager
 
     public IReadOnlyList<string> GetShoppingList()
     {
-        return ShoppingList.ToList();
+        return shoppingList.ToList();
     }
 
     public void ClearShoppingList()
     {
-        ShoppingList.Clear();
+        shoppingList.Clear();
     }
 
 
@@ -110,9 +110,9 @@ public sealed class RecipeManager : IRecipeManager
         bool taskCompletion = false;
         if(FindRecipe(recipeId) is Recipe)
         {
-            if(!CookingPlan.Contains(recipeId))
+            if(!cookingPlan.Contains(recipeId))
             {
-                CookingPlan.AddLast(recipeId);
+                cookingPlan.AddLast(recipeId);
                 taskCompletion = true;
             }
         }        
@@ -122,9 +122,9 @@ public sealed class RecipeManager : IRecipeManager
     public bool RemoveRecipeFromCookingPlan(int recipeId)
     {
         bool taskCompletion = false;
-        if(CookingPlan.Remove(recipeId))
+        if(cookingPlan.Remove(recipeId))
         {
-            RemovedRecipeHistory.Push(recipeId);
+            removedRecipeHistory.Push(recipeId);
             taskCompletion = true;
         }
         return taskCompletion;
@@ -133,7 +133,7 @@ public sealed class RecipeManager : IRecipeManager
     public bool RestoreLastRemovedRecipe()     
     {
         bool taskCompletion = false;
-        if(RemovedRecipeHistory.TryPop(out int recipeId))
+        if(removedRecipeHistory.TryPop(out int recipeId))
         {
             if(AddRecipeToCookingPlan(recipeId))
             {
@@ -145,13 +145,13 @@ public sealed class RecipeManager : IRecipeManager
 
     public int? PeekLastRemovedRecipe()
     {
-        int? recipeId = RemovedRecipeHistory.TryPeek(out int result) ? result : null;
+        int? recipeId = removedRecipeHistory.TryPeek(out int result) ? result : null;
         return recipeId;
     }
 
     public IReadOnlyList<int> GetCookingPlan()
     {
-        return CookingPlan.ToList();
+        return cookingPlan.ToList();
     }
 
     public bool StartCooking(int recipeId)
@@ -160,10 +160,10 @@ public sealed class RecipeManager : IRecipeManager
         Recipe? currentRecipe = FindRecipe(recipeId);
         if(currentRecipe?.Instructions is not null)
         {
-            InstructionQueue.Clear();
+            instructionQueue.Clear();
             foreach (string instruction in currentRecipe.Instructions)
             {
-                InstructionQueue.Enqueue(instruction);
+                instructionQueue.Enqueue(instruction);
             }
             taskCompletion = true;            
         }
@@ -173,13 +173,13 @@ public sealed class RecipeManager : IRecipeManager
 
     public string? PeekNextInstruction()
     {
-        InstructionQueue.TryPeek(out string? nextInstruction);
+        instructionQueue.TryPeek(out string? nextInstruction);
         return nextInstruction;
     }
 
     public string? CompleteNextInstruction()
     {
-        InstructionQueue.TryDequeue(out string? nextInstruction);
+        instructionQueue.TryDequeue(out string? nextInstruction);
         return nextInstruction;
     }
 
