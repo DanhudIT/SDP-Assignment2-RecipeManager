@@ -11,26 +11,32 @@ namespace RecipeManagement.Core;
 public sealed class RecipeManager : IRecipeManager
 {
     // Private Collections
-    public Dictionary<int, Recipe> RecipeDatabase {get; private set; } = new();
-    public List<string> ShoppingList {get; private set; } = new();
-    public LinkedList<int> CookingPlan {get; private set; } = new();
-    public Stack<int> RemovedRecipeHistory {get; private set; } = new();
-    public Queue<string> InstructionQueue {get; private set; } = new();
+    private Dictionary<int, Recipe> RecipeDatabase {get; set; } = new();
+    private List<string> ShoppingList {get; set; } = new();
+    private LinkedList<int> CookingPlan {get; set; } = new();
+    private Stack<int> RemovedRecipeHistory {get; set; } = new();
+    private Queue<string> InstructionQueue {get; set; } = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
         foreach(Recipe recipeImport in recipes)
         {
-            // to validate the recipe for negatives and duplicates
-            if (recipeImport.Id < 0)
+            // to validate the recipe for negatives and duplicates; invalid recipes are rejected and thrown.
+            ArgumentNullException.ThrowIfNull(recipeImport);
+
+            if(recipeImport.Id <= 0)
             {
-                Console.WriteLine($"Negative recipe ID: Negative Recipe ID cannot be negative!");
-                continue;
+                throw new ArgumentException($"Negative recipe ID: Negative Recipe ID cannot be negative!");
             }
+            if(string.IsNullOrWhiteSpace(recipeImport.Title))
+            {
+                throw new ArgumentException($"Blank Title: Recipe has no title, unable to be imported!");
+            }
+
             bool validRecipe = RecipeDatabase.TryAdd(recipeImport.Id, recipeImport);
             if(!validRecipe)
             {
-                Console.WriteLine($"Duplicate Recipe ID: {recipeImport.Id} already exists, unable to be imported!");
+                throw new ArgumentException($"Duplicate Recipe ID: {recipeImport.Id} already exists, unable to be imported!");
             }
         }
     }
@@ -38,26 +44,24 @@ public sealed class RecipeManager : IRecipeManager
     public int RecipeCount => RecipeDatabase.Count;
     public int ShoppingItemCount => ShoppingList.Count;
     public int CookingPlanCount => CookingPlan.Count;
-    public int PendingInstructionCount => 0;
+    public int PendingInstructionCount => InstructionQueue.Count;
     public int RemovedRecipeCount => RemovedRecipeHistory.Count;
 
     public bool AddRecipe(Recipe recipe)
     {
-        bool validRecipe = false;            
-        if (recipe.Id < 0)
+        // Error checking is required for the ID, Title and duplicates; invalid recipes are rejected and returned as false.
+        ArgumentNullException.ThrowIfNull(recipe);
+
+        if(recipe.Id <= 0)
         {
-            Console.WriteLine($"Negative recipe ID: Negative Recipe ID cannot be negative!");
-            return validRecipe;
+            return false;
+        }
+        if(string.IsNullOrWhiteSpace(recipe.Title))
+        {
+            return false;
         }
 
-        validRecipe = RecipeDatabase.TryAdd(recipe.Id, recipe);
-        
-        if(!validRecipe)
-        {
-            Console.WriteLine($"Duplicate Recipe ID: {recipe.Id} already exists, unable to be imported!");
-            return validRecipe;
-        }
-        return validRecipe;
+        return RecipeDatabase.TryAdd(recipe.Id, recipe);
     }
 
     public Recipe? FindRecipe(int recipeId)
@@ -68,7 +72,12 @@ public sealed class RecipeManager : IRecipeManager
 
     public bool RemoveRecipe(int recipeId)
     {
-        return RecipeDatabase.Remove(recipeId);
+        bool taskCompletion = false;
+        if(!CookingPlan.Contains(recipeId))
+        {
+            taskCompletion = RecipeDatabase.Remove(recipeId);
+        }
+        return taskCompletion;
     }
 
     public int AddIngredientsToShoppingList(int recipeId)
@@ -87,7 +96,7 @@ public sealed class RecipeManager : IRecipeManager
 
     public IReadOnlyList<string> GetShoppingList()
     {
-        return ShoppingList;
+        return ShoppingList.ToList();
     }
 
     public void ClearShoppingList()
@@ -126,8 +135,11 @@ public sealed class RecipeManager : IRecipeManager
         bool taskCompletion = false;
         if(RemovedRecipeHistory.TryPop(out int recipeId))
         {
-            AddRecipeToCookingPlan(recipeId);
-            taskCompletion = true;
+            if(AddRecipeToCookingPlan(recipeId))
+            {
+                taskCompletion = true;
+            }
+            
         }
         return taskCompletion;
     }
@@ -147,9 +159,9 @@ public sealed class RecipeManager : IRecipeManager
     {
         bool taskCompletion = false;
         Recipe? currentRecipe = FindRecipe(recipeId);
-
-        if(currentRecipe is not null)
+        if(currentRecipe?.Instructions is not null)
         {
+            InstructionQueue.Clear();
             foreach (string instruction in currentRecipe.Instructions)
             {
                 InstructionQueue.Enqueue(instruction);
@@ -167,7 +179,6 @@ public sealed class RecipeManager : IRecipeManager
     }
 
     public string? CompleteNextInstruction()
-
     {
         InstructionQueue.TryDequeue(out string? nextInstruction);
         return nextInstruction;
