@@ -73,7 +73,8 @@ public sealed class RecipeManagerTests
         bool result = manager.AddRecipe(testRecipe);
 
         Assert.True(result);
-        Assert.Contains(30, manager.RecipeDatabase.Keys);
+        Assert.NotNull(manager.FindRecipe(testRecipe.Id));
+        Assert.Equal(3, manager.RecipeCount);
     }
 
     [Fact]
@@ -91,7 +92,8 @@ public sealed class RecipeManagerTests
         bool result = manager.AddRecipe(testRecipe);
 
         Assert.False(result);
-        Assert.DoesNotContain(-10, manager.RecipeDatabase.Keys);
+        Assert.Null(manager.FindRecipe(testRecipe.Id));
+        Assert.Equal(2, manager.RecipeCount);
     }
 
     [Fact]
@@ -108,8 +110,10 @@ public sealed class RecipeManagerTests
         
         bool result = manager.AddRecipe(testRecipe);
 
+        var verifyRecipe = manager.FindRecipe(10);
         Assert.False(result);
-        Assert.Contains(10, manager.RecipeDatabase.Keys);
+        Assert.NotNull(verifyRecipe);
+        Assert.Equal(10, verifyRecipe.Id);
     }
 
 
@@ -123,7 +127,6 @@ public sealed class RecipeManagerTests
         Assert.NotNull(result);
         Assert.IsType<Recipe>(result);
         Assert.Equal(10, result.Id);
-        Assert.Contains(result, manager.RecipeDatabase.Values);
     }
 
     [Fact]
@@ -165,18 +168,19 @@ public sealed class RecipeManagerTests
 
         var result = manager.AddIngredientsToShoppingList(10);
 
-        Assert.NotEmpty(manager.ShoppingList);
+        Assert.NotEmpty(manager.GetShoppingList());
+        Assert.Equal(1, manager.ShoppingItemCount);
         Assert.Equal(1, result);
     }
 
     [Fact]
-    public void AddIngredientsToShoppingList_ReturnsNull_WhenInvalidRecipe()
+    public void AddIngredientsToShoppingList_ReturnsZero_WhenInvalidRecipe()
     {
         var manager = CreateManager();
 
         var result = manager.AddIngredientsToShoppingList(30);
 
-        Assert.Empty(manager.ShoppingList);
+        Assert.Empty(manager.GetShoppingList());
         Assert.Equal(0, result);
     }
 
@@ -189,8 +193,7 @@ public sealed class RecipeManagerTests
 
         var result = manager.GetShoppingList();
 
-        Assert.NotEmpty(manager.ShoppingList);
-        Assert.IsType<List<string>>(result);
+        Assert.NotEmpty(manager.GetShoppingList());
         Assert.Single(result);
         Assert.Equal("1 apple", result[0]);
     }
@@ -204,7 +207,7 @@ public sealed class RecipeManagerTests
 
         manager.ClearShoppingList();
 
-        Assert.Empty(manager.ShoppingList);
+        Assert.Empty(manager.GetShoppingList());
     }
 
     [Fact]
@@ -215,7 +218,8 @@ public sealed class RecipeManagerTests
         bool result = manager.AddRecipeToCookingPlan(10);
 
         Assert.True(result);
-        Assert.Contains(10, manager.CookingPlan);
+        Assert.Contains(10, manager.GetCookingPlan());
+        Assert.Equal(1, manager.CookingPlanCount);
     }
     [Fact]
     public void AddRecipeToCookingPlan_ReturnFalse_WhenInvalidRecipe()
@@ -225,7 +229,8 @@ public sealed class RecipeManagerTests
         bool result = manager.AddRecipeToCookingPlan(30);
 
         Assert.False(result);
-        Assert.DoesNotContain(30, manager.CookingPlan);
+        Assert.DoesNotContain(30, manager.GetCookingPlan());
+        Assert.Equal(0, manager.CookingPlanCount);
     }
 
     [Fact]
@@ -238,9 +243,10 @@ public sealed class RecipeManagerTests
         bool result = manager.RemoveRecipeFromCookingPlan(10);
 
         Assert.True(result);
-        Assert.DoesNotContain(10, manager.CookingPlan);
-        Assert.Contains(20, manager.CookingPlan);
-        Assert.Contains(10, manager.RemovedRecipeHistory);
+        Assert.DoesNotContain(10, manager.GetCookingPlan());
+        Assert.Contains(20, manager.GetCookingPlan());
+        Assert.Equal(1, manager.CookingPlanCount);
+        Assert.Equal(10, manager.PeekLastRemovedRecipe());
     }
 
     [Fact]
@@ -253,9 +259,9 @@ public sealed class RecipeManagerTests
         bool result = manager.RemoveRecipeFromCookingPlan(30);
 
         Assert.False(result);
-        Assert.Contains(20, manager.CookingPlan);
-        Assert.DoesNotContain(30, manager.CookingPlan);
-        Assert.DoesNotContain(30, manager.RemovedRecipeHistory);
+        Assert.Contains(20, manager.GetCookingPlan());
+        Assert.DoesNotContain(30, manager.GetCookingPlan());
+        Assert.Null(manager.PeekLastRemovedRecipe());
     }
     
     [Fact]
@@ -269,9 +275,8 @@ public sealed class RecipeManagerTests
         bool result = manager.RestoreLastRemovedRecipe();
 
         Assert.True(result);
-        Assert.Contains(10, manager.CookingPlan);
-        Assert.DoesNotContain(10, manager.RemovedRecipeHistory);
-        Assert.Empty(manager.RemovedRecipeHistory);
+        Assert.Contains(10, manager.GetCookingPlan());
+        Assert.Null(manager.PeekLastRemovedRecipe());
     }
 
     [Fact]
@@ -286,9 +291,8 @@ public sealed class RecipeManagerTests
         bool result = manager.RestoreLastRemovedRecipe();
 
         Assert.False(result);
-        Assert.Contains(10, manager.CookingPlan);
-        Assert.DoesNotContain(10, manager.RemovedRecipeHistory);
-        Assert.Empty(manager.RemovedRecipeHistory);
+        Assert.Contains(10, manager.GetCookingPlan());
+        Assert.Null(manager.PeekLastRemovedRecipe());
     }
 
     [Fact]
@@ -302,9 +306,9 @@ public sealed class RecipeManagerTests
         int? result = manager.PeekLastRemovedRecipe();
 
         Assert.Equal(10, result);
-        Assert.Contains(10, manager.RemovedRecipeHistory);
-        Assert.DoesNotContain(10, manager.CookingPlan);
-        Assert.NotEmpty(manager.RemovedRecipeHistory);
+        Assert.DoesNotContain(10, manager.GetCookingPlan());
+        Assert.Equal(1, manager.RemovedRecipeCount);
+
     }
 
     [Fact]
@@ -319,8 +323,7 @@ public sealed class RecipeManagerTests
         int? result = manager.PeekLastRemovedRecipe();
 
         Assert.Null(result);
-        Assert.Contains(10, manager.CookingPlan);
-        Assert.Empty(manager.RemovedRecipeHistory);
+        Assert.Contains(10, manager.GetCookingPlan());
     }
 
     [Fact]
@@ -335,7 +338,7 @@ public sealed class RecipeManagerTests
         Assert.Contains(10, result);
         Assert.Contains(20, result);
         Assert.Equal(2, result.Count);
-        Assert.Empty(manager.RemovedRecipeHistory);
+        Assert.Equal(2, manager.CookingPlanCount);
     }
 
     [Fact]
@@ -344,11 +347,16 @@ public sealed class RecipeManagerTests
         var manager = CreateManager();
         
         bool result = manager.StartCooking(10);
-        string instruction1 = manager.InstructionQueue.Dequeue();
+        string? instruction1 = manager.CompleteNextInstruction();
+        string? instruction2 = manager.CompleteNextInstruction();
+        string? instruction3 = manager.CompleteNextInstruction();
 
         Assert.True(result);
+        Assert.NotNull(instruction1);
         Assert.Equal("First step", instruction1);
-        Assert.NotEmpty(manager.InstructionQueue);
+        Assert.Equal("Second step", instruction2);
+        Assert.Null(instruction3);
+        Assert.Null(manager.PeekNextInstruction());
     }
 
     [Fact]
@@ -359,7 +367,7 @@ public sealed class RecipeManagerTests
         bool result = manager.StartCooking(30);
 
         Assert.False(result);
-        Assert.Empty(manager.InstructionQueue);
+        Assert.Null(manager.PeekNextInstruction());
     }
 
     [Fact]
@@ -378,8 +386,8 @@ public sealed class RecipeManagerTests
     {
         var manager = CreateManager();
         manager.StartCooking(10);
-        manager.InstructionQueue.Dequeue();
-        manager.InstructionQueue.Dequeue();
+        manager.CompleteNextInstruction();
+        manager.CompleteNextInstruction();
 
         string? result = manager.PeekNextInstruction();
 
@@ -405,8 +413,8 @@ public sealed class RecipeManagerTests
     {
         var manager = CreateManager();
         manager.StartCooking(10);
-        manager.InstructionQueue.Dequeue();
-        manager.InstructionQueue.Dequeue();
+        manager.CompleteNextInstruction();
+        manager.CompleteNextInstruction();
 
         string? result = manager.CompleteNextInstruction();
 
