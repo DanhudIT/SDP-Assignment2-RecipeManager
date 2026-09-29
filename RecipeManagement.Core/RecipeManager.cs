@@ -27,7 +27,7 @@ public sealed class RecipeManager : IRecipeManager
             // to validate the recipe for negatives and duplicates; invalid recipes are rejected and thrown.
             ArgumentNullException.ThrowIfNull(recipeImport);
 
-            if(recipeImport.Id < 0)
+            if(recipeImport.Id <= 0)
             {
                 throw new ArgumentException($"Negative recipe ID: Negative Recipe ID cannot be negative!");
             }
@@ -106,7 +106,6 @@ public sealed class RecipeManager : IRecipeManager
     {
         shoppingList.Clear();
     }
-
 
     public bool AddRecipeToCookingPlan(int recipeId)
     {
