@@ -37,4 +37,5 @@ Until you implement `RecipeManager`, menu options print a **Not implemented** me
 
 ## AI acknowledgement
 
-Include the required AI acknowledgement statement in your submission as described in the assignment specification.
+AI acknowledgement: I used Claude Code to help me understand private fields and encapsulation, how to throw ArgumentExceptions, unit test construction methods, Assert methods, conversion of data types, Bugfixing errors with VSCode, review code against assignment requirements, understanding integration tests, stack and linked list behaviour and Claude was used for checklist creation of issues through Notion.
+I did not copy or adapt AI-generated code or other material into my submission. I developed the submitted solution myself based on my understanding of the course material.
