@@ -135,10 +135,7 @@ public sealed class RecipeManager : IRecipeManager
         bool taskCompletion = false;
         if(removedRecipeHistory.TryPop(out int recipeId))
         {
-            if(AddRecipeToCookingPlan(recipeId))
-            {
-                taskCompletion = true;
-            }
+            taskCompletion = AddRecipeToCookingPlan(recipeId);
         }
         return taskCompletion;
     }
@@ -167,7 +164,6 @@ public sealed class RecipeManager : IRecipeManager
             }
             taskCompletion = true;            
         }
-
         return taskCompletion;
     }
 
