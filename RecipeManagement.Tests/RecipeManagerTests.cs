@@ -102,18 +102,20 @@ public sealed class RecipeManagerTests
         var manager = CreateManager();
         Recipe testRecipe = new()
         {
-                Id = 10,
-                Title = "Recipe A",
-                Ingredients = ["1 apple"],
+                Id = 30,
+                Title = "Recipe C",
+                Ingredients = ["5 apple"],
                 Instructions = ["First step", "Second step"]
         };
         
         bool result = manager.AddRecipe(testRecipe);
+        bool resultFail = manager.AddRecipe(testRecipe);
 
-        var verifyRecipe = manager.FindRecipe(10);
-        Assert.False(result);
+        Assert.True(result);
+        Assert.False(resultFail);
+        var verifyRecipe = manager.FindRecipe(30);
         Assert.NotNull(verifyRecipe);
-        Assert.Equal(10, verifyRecipe.Id);
+        Assert.Equal(30, verifyRecipe.Id);
     }
 
 
@@ -419,5 +421,57 @@ public sealed class RecipeManagerTests
         string? result = manager.CompleteNextInstruction();
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void RecipeManagerIntegration_UpdateRecipeAndCook()
+    {
+        var manager = CreateManager();
+        Recipe testRecipe = new()
+        {
+            Id = 20,
+            Title = "Recipe B - Updated",
+            Ingredients = ["5 cups of Sugar", "1 cup of Milk"],
+            Instructions = ["First step", "Second step"]
+        };
+
+        // To test the Recipe manager by acting out an updated recipe, adding to plan and then using instructions.
+        var testFindOriginalRecipe = manager.FindRecipe(20);
+        var testRecipeRemoved = manager.RemoveRecipe(20);
+        var testAddRecipe = manager.AddRecipe(testRecipe);
+        var testVerifyRecipeAdded = manager.FindRecipe(testRecipe.Id);
+        manager.AddIngredientsToShoppingList(20);
+        var testShoppingList = manager.GetShoppingList();
+        var testDatabaseToPlan = manager.AddRecipeToCookingPlan(20);
+        var testVerifyRecipeInPlan = manager.GetCookingPlan();
+        var testPlanToRemovedHistory = manager.RemoveRecipeFromCookingPlan(20);
+        var testVerifyPlanInHistory = manager.PeekLastRemovedRecipe();
+        var testVerifyPlanRemoved = manager.GetCookingPlan();
+        var testRemovedHistoryToPlan = manager.RestoreLastRemovedRecipe();
+        var testVerifyPlanReturned = manager.GetCookingPlan();
+        var testStartCooking = manager.StartCooking(20);
+        var testInstructions = manager.PeekNextInstruction();
+        var testStepOne = manager.CompleteNextInstruction();
+        var testStepTwo = manager.CompleteNextInstruction();
+        var testInstructionsEmpty = manager.PeekNextInstruction();
+
+        Assert.NotNull(testFindOriginalRecipe);
+        Assert.True(testRecipeRemoved);
+        Assert.True(testAddRecipe);
+        Assert.NotNull(testVerifyRecipeAdded);
+        Assert.Equal("Recipe B - Updated", testVerifyRecipeAdded.Title);
+        Assert.Equal(["5 cups of Sugar", "1 cup of Milk"], testShoppingList);
+        Assert.True(testDatabaseToPlan);
+        Assert.Contains(20, testVerifyRecipeInPlan);
+        Assert.True(testPlanToRemovedHistory);
+        Assert.Equal(testRecipe.Id, testVerifyPlanInHistory);
+        Assert.DoesNotContain(testRecipe.Id, testVerifyPlanRemoved);
+        Assert.True(testRemovedHistoryToPlan);
+        Assert.Contains(testRecipe.Id, testVerifyPlanReturned);
+        Assert.True(testStartCooking);
+        Assert.Equal("First step", testInstructions);
+        Assert.Equal("First step", testStepOne);
+        Assert.Equal("Second step", testStepTwo);
+        Assert.Null(testInstructionsEmpty);
     }
 }
