@@ -59,6 +59,75 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void RecipeManager_ThrowsArgumentNullException_WhenNullRecipes()
+    {
+        Assert.Throws<ArgumentNullException>(() => new RecipeManager(null!));
+    }
+
+    [Fact]
+    public void RecipeManager_ThrowsArgumentNullException_WhenNullInRecipeList()
+    {
+        Assert.Throws<ArgumentNullException>(() => new RecipeManager([null!]));
+    }
+
+    [Fact]
+    public void RecipeManager_ThrowsArgumentException_WhenIdIsNegative()
+    {
+        Assert.Throws<ArgumentException>(() => new RecipeManager(
+        [
+            new Recipe
+            {
+                Id = -10,
+                Title = "Recipe B"
+            }
+        ]));    
+    }
+
+    [Fact]
+    public void RecipeManager_ThrowsArgumentException_WhenIdIsZero()
+    {
+        Assert.Throws<ArgumentException>(() => new RecipeManager(
+        [
+            new Recipe
+            {
+                Id = -0,
+                Title = "Recipe B"
+            }
+        ]));    
+    }
+
+    [Fact]
+    public void RecipeManager_ThrowsArgumentException_WhenTitleIsNullOrWhiteSpace()
+    {
+        Assert.Throws<ArgumentException>(() => new RecipeManager(
+        [
+            new Recipe
+            {
+                Id = 10,
+                Title = null!
+            }
+        ]));    
+    }
+
+    [Fact]
+    public void RecipeManager_ThrowsArgumentException_WhenRecipeIdIsDuplicate()
+    {
+        Assert.Throws<ArgumentException>(() => new RecipeManager(
+        [
+            new Recipe
+            {
+                Id = 10,
+                Title = "Recipe B"
+            },
+            new Recipe
+            {
+                Id = 10,
+                Title = "Recipe B"
+            }
+        ]));    
+    }
+
+    [Fact]
     public void AddRecipe_ReturnsTrue_WhenRecipeAddSuccessful()
     {
         var manager = CreateManager();
@@ -78,6 +147,33 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void AddRecipe_ReturnsFalse_WhenZeroIDRecipeAddFail()
+    {
+        var manager = CreateManager();
+        Recipe testRecipe = new()
+        {
+            Id = 0,
+            Title = "Recipe C",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"]
+        };
+        
+        bool result = manager.AddRecipe(testRecipe);
+
+        Assert.False(result);
+        Assert.Null(manager.FindRecipe(testRecipe.Id));
+        Assert.Equal(2, manager.RecipeCount);
+    }
+    
+    [Fact]
+    public void AddRecipe_ThrowArgumentNullException_WhenRecipeIsNull()
+    {
+        var manager = CreateManager();
+        
+        Assert.Throws<ArgumentNullException>(() => manager.AddRecipe(null!));
+    }
+
+    [Fact]
     public void AddRecipe_ReturnsFalse_WhenNegativeRecipeAddFails()
     {
         var manager = CreateManager();
@@ -85,6 +181,25 @@ public sealed class RecipeManagerTests
         {
             Id = -10,
             Title = "Recipe C",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"]
+        };
+        
+        bool result = manager.AddRecipe(testRecipe);
+
+        Assert.False(result);
+        Assert.Null(manager.FindRecipe(testRecipe.Id));
+        Assert.Equal(2, manager.RecipeCount);
+    }
+
+    [Fact]
+    public void AddRecipe_ReturnsFalse_WhenTitleIsBlank()
+    {
+        var manager = CreateManager();
+        Recipe testRecipe = new()
+        {
+            Id = 30,
+            Title = "",
             Ingredients = ["5 cups of Sugar"],
             Instructions = ["First step", "Second step"]
         };
@@ -164,6 +279,20 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void RemoveRecipe_ReturnsFalse_WhileRecipeAlreadyInPlan()
+    {
+        var manager = CreateManager();
+        var RecipePlanned = manager.AddRecipeToCookingPlan(10);
+
+        var result = manager.RemoveRecipe(10);
+
+        Assert.True(RecipePlanned);
+        Assert.False(result);
+        Assert.NotNull(manager.FindRecipe(10));
+        Assert.Contains(10, manager.GetCookingPlan());
+    }
+
+    [Fact]
     public void AddIngredientsToShoppingList_ReturnsInt_WhenRecipeFound()
     {
         var manager = CreateManager();
@@ -236,6 +365,20 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void AddRecipeToCookingPlan_ReturnFalse_WhenDuplicateRecipe()
+    {
+        var manager = CreateManager();
+
+        bool result = manager.AddRecipeToCookingPlan(10);
+        bool resultDuplicate = manager.AddRecipeToCookingPlan(10);
+
+        Assert.True(result);
+        Assert.False(resultDuplicate);
+        Assert.Contains(10, manager.GetCookingPlan());
+        Assert.Equal(1, manager.CookingPlanCount);
+    }
+
+    [Fact]
     public void RemoveRecipeFromCookingPlan_ReturnTrue_WhenValidRecipe()
     {
         var manager = CreateManager();
@@ -298,6 +441,37 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void RestoreLastRemovedRecipe_ReturnFalse_WhenRecipeRemoved()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.RemoveRecipeFromCookingPlan(10);
+        manager.RemoveRecipe(10);
+
+        bool result = manager.RestoreLastRemovedRecipe();
+
+        Assert.False(result);
+        Assert.DoesNotContain(10, manager.GetCookingPlan());
+        Assert.Null(manager.PeekLastRemovedRecipe());
+    }
+
+    [Fact]
+    public void RestoreLastRemovedRecipe_ReturnFalse_WhenRecipeAlreadyInPlan()
+    {
+        var manager = CreateManager();
+        manager.AddRecipeToCookingPlan(10);
+        manager.RemoveRecipeFromCookingPlan(10);
+        manager.AddRecipeToCookingPlan(10);
+
+        bool result = manager.RestoreLastRemovedRecipe();
+
+        Assert.False(result);
+        Assert.Contains(10, manager.GetCookingPlan());
+        Assert.Null(manager.PeekLastRemovedRecipe());
+        Assert.Equal(1, manager.CookingPlanCount);
+    }
+
+    [Fact]
     public void PeekLastRemovedRecipe_ReturnInt_WhenStackHasRemovedRecipe()
     {
         var manager = CreateManager();
@@ -310,7 +484,6 @@ public sealed class RecipeManagerTests
         Assert.Equal(10, result);
         Assert.DoesNotContain(10, manager.GetCookingPlan());
         Assert.Equal(1, manager.RemovedRecipeCount);
-
     }
 
     [Fact]
@@ -370,6 +543,35 @@ public sealed class RecipeManagerTests
 
         Assert.False(result);
         Assert.Null(manager.PeekNextInstruction());
+    }
+
+    [Fact]
+    public void StartCooking_ReturnTrue_WhenStartCookingCalledWhileAlreadyCooking()
+    {
+        var manager = CreateManager();
+        bool previousCooking = manager.StartCooking(10);
+        manager.CompleteNextInstruction();
+
+        bool result = manager.StartCooking(10);
+
+        Assert.True(previousCooking);
+        Assert.True(result);
+        Assert.NotNull(manager.PeekNextInstruction());
+        Assert.Equal(2, manager.PendingInstructionCount);
+    }
+
+    [Fact]
+    public void StartCooking_ReturnFalse_WhenStartWithEmptyInstructions()
+    {
+        var manager = CreateManager();
+        
+        bool result = manager.StartCooking(20);
+
+        Assert.False(result);
+        Assert.Null(manager.PeekNextInstruction());
+        var verifyRecipe = manager.FindRecipe(20);
+        Assert.NotNull(verifyRecipe);
+        Assert.Empty(verifyRecipe.Instructions);
     }
 
     [Fact]
