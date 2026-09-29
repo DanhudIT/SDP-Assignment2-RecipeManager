@@ -19,12 +19,15 @@ public sealed class RecipeManager : IRecipeManager
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
+        //To ensure the user doesn't submit a null recipe collection
+        ArgumentNullException.ThrowIfNull(recipes);
+
         foreach(Recipe recipeImport in recipes)
         {
             // to validate the recipe for negatives and duplicates; invalid recipes are rejected and thrown.
             ArgumentNullException.ThrowIfNull(recipeImport);
 
-            if(recipeImport.Id <= 0)
+            if(recipeImport.Id < 0)
             {
                 throw new ArgumentException($"Negative recipe ID: Negative Recipe ID cannot be negative!");
             }
@@ -154,11 +157,11 @@ public sealed class RecipeManager : IRecipeManager
     public bool StartCooking(int recipeId)
     {
         bool taskCompletion = false;
-        Recipe? currentRecipe = FindRecipe(recipeId);
-        if(currentRecipe?.Instructions is not null)
+        Recipe? newRecipe = FindRecipe(recipeId);
+        if(newRecipe?.Instructions.Count > 0)
         {
             instructionQueue.Clear();
-            foreach (string instruction in currentRecipe.Instructions)
+            foreach (string instruction in newRecipe.Instructions)
             {
                 instructionQueue.Enqueue(instruction);
             }
