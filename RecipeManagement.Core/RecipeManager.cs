@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RecipeManagement.Core;
 
@@ -181,14 +182,31 @@ public sealed class RecipeManager : IRecipeManager
         return nextInstruction;
     }
 
-    public IReadOnlyList<Recipe> SearchByTitle(string searchText) =>
-        throw new NotImplementedException("Part B: implement SearchByTitle.");
+    public IReadOnlyList<Recipe> SearchByTitle(string searchText)
+    {
+        var searchTitle = recipeDatabase.Values
+            .Where(r => r.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return searchTitle;
+    }
 
-    public IReadOnlyList<Recipe> SearchByIngredient(string searchText) =>
-        throw new NotImplementedException("Part B: implement SearchByIngredient.");
+    public IReadOnlyList<Recipe> SearchByIngredient(string searchText)
+    {
+        var searchIngredient = recipeDatabase.Values
+            .Where(r => r.Ingredients.Any(i => i.Contains(searchText, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        return searchIngredient;
+    }
 
-    public IReadOnlyList<Recipe> GetHighestProteinRecipes(int count) =>
-        throw new NotImplementedException("Part B: implement GetHighestProteinRecipes.");
+    public IReadOnlyList<Recipe> GetHighestProteinRecipes(int count)
+    {
+        var highestProteinsList = recipeDatabase.Values
+            .Where(r => r.Nutrition?.ProteinG is not null)
+            .OrderByDescending(r => r.Nutrition!.ProteinG)
+            .Take(count)
+            .ToList();
+        return highestProteinsList;
+    }
 
     public bool AddSavedRecipe(int recipeId) =>
         throw new NotImplementedException("Part B: implement AddSavedRecipe.");
