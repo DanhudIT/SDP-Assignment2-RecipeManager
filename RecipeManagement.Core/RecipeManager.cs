@@ -17,6 +17,7 @@ public sealed class RecipeManager : IRecipeManager
     private LinkedList<int> cookingPlan = new();
     private Stack<int> removedRecipeHistory = new();
     private Queue<string> instructionQueue = new();
+    private Dictionary<int, Recipe> savedRecipes = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
@@ -208,15 +209,31 @@ public sealed class RecipeManager : IRecipeManager
         return highestProteinsList;
     }
 
-    public bool AddSavedRecipe(int recipeId) =>
-        throw new NotImplementedException("Part B: implement AddSavedRecipe.");
+    public bool AddSavedRecipe(int recipeId)
+    {
+        bool taskCompletion = false;
+        
+        Recipe? foundRecipe = FindRecipe(recipeId);
+        if(foundRecipe is not null)
+        {
+            taskCompletion = savedRecipes.TryAdd(recipeId, foundRecipe);
+        }
+        return taskCompletion;
+    }
 
-    public bool RemoveSavedRecipe(int recipeId) =>
-        throw new NotImplementedException("Part B: implement RemoveSavedRecipe.");
+    public bool RemoveSavedRecipe(int recipeId)
+    {
+        return savedRecipes.Remove(recipeId);
+    }
 
-    public bool IsRecipeSaved(int recipeId) =>
-        throw new NotImplementedException("Part B: implement IsRecipeSaved.");
+    public bool IsRecipeSaved(int recipeId)
+    {
+        return savedRecipes.ContainsKey(recipeId);
+    }
 
-    public IReadOnlyList<int> GetSavedRecipes() =>
-        throw new NotImplementedException("Part B: implement GetSavedRecipes.");
+    public IReadOnlyList<int> GetSavedRecipes()
+    {
+        return savedRecipes.Keys.ToList();
+    }
+
 }
