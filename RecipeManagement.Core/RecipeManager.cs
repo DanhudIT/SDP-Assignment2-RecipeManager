@@ -17,7 +17,7 @@ public sealed class RecipeManager : IRecipeManager
     private LinkedList<int> cookingPlan = new();
     private Stack<int> removedRecipeHistory = new();
     private Queue<string> instructionQueue = new();
-    private Dictionary<int, Recipe> savedRecipes = new();
+    private HashSet<int> savedRecipes = new();
 
     public RecipeManager(IEnumerable<Recipe> recipes)
     {
@@ -81,6 +81,8 @@ public sealed class RecipeManager : IRecipeManager
         if(!cookingPlan.Contains(recipeId))
         {
             taskCompletion = recipeDatabase.Remove(recipeId);
+            // keep the saved ids synced with existing recipes
+            RemoveSavedRecipe(recipeId);
         }
         return taskCompletion;
     }
@@ -213,10 +215,9 @@ public sealed class RecipeManager : IRecipeManager
     {
         bool taskCompletion = false;
         
-        Recipe? foundRecipe = FindRecipe(recipeId);
-        if(foundRecipe is not null)
+        if(FindRecipe(recipeId) is not null)
         {
-            taskCompletion = savedRecipes.TryAdd(recipeId, foundRecipe);
+            taskCompletion = savedRecipes.Add(recipeId);
         }
         return taskCompletion;
     }
@@ -228,12 +229,12 @@ public sealed class RecipeManager : IRecipeManager
 
     public bool IsRecipeSaved(int recipeId)
     {
-        return savedRecipes.ContainsKey(recipeId);
+        return savedRecipes.Contains(recipeId);
     }
 
     public IReadOnlyList<int> GetSavedRecipes()
     {
-        return savedRecipes.Keys.ToList();
+        return savedRecipes.ToList();
     }
 
 }
