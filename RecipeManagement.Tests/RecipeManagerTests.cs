@@ -330,7 +330,7 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
-    public void ClearShoppingList_ClearShoppingList()
+    public void ClearShoppingList_EmptiesList()
     {
         var manager = CreateManager();
         manager.AddIngredientsToShoppingList(10);
@@ -586,7 +586,7 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
-    public void PeekNextInstruction_ReturnNull_WhenNextInstructionUnAvailable()
+    public void PeekNextInstruction_ReturnNull_WhenNextInstructionUnavailable()
     {
         var manager = CreateManager();
         manager.StartCooking(10);
@@ -623,6 +623,163 @@ public sealed class RecipeManagerTests
         string? result = manager.CompleteNextInstruction();
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void SearchByTitle_ReturnList_WhenRecipeTitleFound()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.SearchByTitle("Recipe");
+
+        Assert.Equal(2, result.Count);
+        Assert.All(result, r => Assert.Contains("Recipe", r.Title));
+    }
+
+    [Fact]
+    public void SearchByTitle_ReturnEmpty_WhenRecipeTitleNotFound()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.SearchByTitle("Recipe C");
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void SearchByIngredient_ReturnsRecipe_WhenRecipeIngredientFound()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.SearchByIngredient("Apple");
+
+        var recipeFound = Assert.Single(result);
+        Assert.Contains(recipeFound.Ingredients, i => i.Contains("Apple", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SearchByIngredient_ReturnEmptyList_WhenRecipeIngredientNotFound()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.SearchByIngredient("propane");
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetHighestProteinRecipes_ReturnTopRecipesInOrder_ExcludingNullProtein()
+    {
+        var manager = CreateManager();
+        Recipe testRecipeHighProtein = new()
+        {
+            Id = 30,
+            Title = "testRecipeHighProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 100.5
+            }
+        };
+        Recipe testRecipeLowProtein = new()
+        {
+            Id = 40,
+            Title = "testRecipeLowProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 0.5
+            }
+        };
+        manager.AddRecipe(testRecipeHighProtein);
+        manager.AddRecipe(testRecipeLowProtein);
+        
+        var result = manager.GetHighestProteinRecipes(3);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(100.5, result[0].Nutrition!.ProteinG);
+        Assert.Equal(0.5, result[1].Nutrition!.ProteinG);
+        Assert.All(result, r => Assert.NotNull(r.Nutrition?.ProteinG));
+    }
+    
+    [Fact]
+    public void AddSavedRecipe_ReturnTrueAndAddRecipe_WhenValidRecipe()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.AddSavedRecipe(10);
+
+        Assert.True(result);
+        Assert.True(manager.IsRecipeSaved(10));
+        Assert.Contains(10, manager.GetSavedRecipes());
+    }
+
+    [Fact]
+    public void AddSavedRecipe_ReturnFalse_WhenDuplicate()
+    {
+        var manager = CreateManager();
+        var result = manager.AddSavedRecipe(10);
+
+        var duplicate = manager.AddSavedRecipe(10);
+
+        Assert.True(result);
+        Assert.False(duplicate);
+        Assert.True(manager.IsRecipeSaved(10));
+        Assert.Contains(10, manager.GetSavedRecipes());
+    }
+
+    [Fact]
+    public void AddSavedRecipe_ReturnFalse_WhenInvalidId()
+    {
+        var manager = CreateManager();
+
+        var result = manager.AddSavedRecipe(100);
+
+        Assert.False(result);
+        Assert.False(manager.IsRecipeSaved(100));
+        Assert.DoesNotContain(100, manager.GetSavedRecipes());
+    }
+
+    [Fact]
+    public void RemoveSavedRecipe_ReturnTrue_WhenValidId()
+    {
+        var manager = CreateManager();
+        manager.AddSavedRecipe(10);
+
+        var result = manager.RemoveSavedRecipe(10);
+
+        Assert.True(result);
+        Assert.False(manager.IsRecipeSaved(10));
+        Assert.DoesNotContain(10, manager.GetSavedRecipes());
+    }
+
+    [Fact]
+    public void RemoveSavedRecipe_ReturnFalse_WhenInvalidId()
+    {
+        var manager = CreateManager();
+
+        var result = manager.RemoveSavedRecipe(10);
+
+        Assert.False(result);
+        Assert.False(manager.IsRecipeSaved(10));
+        Assert.DoesNotContain(10, manager.GetSavedRecipes());
+    }
+
+    [Fact]
+    public void RemoveRecipe_AlsoRemovesFromSavedRecipe_WhenRecipeWasSaved()
+    {
+        var manager = CreateManager();
+        var addResult = manager.AddSavedRecipe(10);
+        Assert.True(manager.IsRecipeSaved(10));
+
+        var result = manager.RemoveRecipe(10);
+
+        Assert.True(addResult);
+        Assert.True(result);
+        Assert.False(manager.IsRecipeSaved(10));
+        Assert.DoesNotContain(10, manager.GetSavedRecipes());
     }
 
     [Fact]
@@ -676,4 +833,27 @@ public sealed class RecipeManagerTests
         Assert.Equal("Second step", testStepTwo);
         Assert.Null(testInstructionsEmpty);
     }
+    
+    [Fact]
+    public void SavedRecipesIntegration_SaveAndDeleteManipulation()
+    {
+        var manager = CreateManager();
+
+        // save twice, confirm list
+        Assert.True(manager.AddSavedRecipe(10));
+        Assert.True(manager.AddSavedRecipe(20));
+        Assert.Equal(2, manager.GetSavedRecipes().Count);
+        
+        //unsave one, confirm leftovers
+        Assert.True(manager.RemoveSavedRecipe(10));
+        Assert.False(manager.IsRecipeSaved(10));
+        Assert.Single(manager.GetSavedRecipes());
+
+        //delete recipe and have no more saves
+        Assert.True(manager.IsRecipeSaved(20));
+        Assert.True(manager.RemoveRecipe(20));
+        Assert.False(manager.IsRecipeSaved(20));
+        Assert.Empty(manager.GetSavedRecipes());
+    }
+
 }
