@@ -626,11 +626,24 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
-    public void SearchByTitle_ReturnList_WhenRecipeTitleFound()
+    public void SearchByTitle_ReturnMatches_WhenRecipeTitleFoundDespiteCase()
     {
         var manager = CreateManager();
         
         var result = manager.SearchByTitle("Recipe");
+        var resultNoCase = manager.SearchByTitle("recipe");
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(2, resultNoCase.Count);
+        Assert.All(result, r => Assert.Contains("Recipe", r.Title));
+    }
+
+    [Fact]
+    public void SearchByTitle_ReturnAllRecipesAsList_WhenBlankTitleSearch()
+    {
+        var manager = CreateManager();
+        
+        var result = manager.SearchByTitle("");
 
         Assert.Equal(2, result.Count);
         Assert.All(result, r => Assert.Contains("Recipe", r.Title));
@@ -650,7 +663,19 @@ public sealed class RecipeManagerTests
     public void SearchByIngredient_ReturnsRecipe_WhenRecipeIngredientFound()
     {
         var manager = CreateManager();
-        
+        Recipe testRecipeHighProtein = new()
+        {
+            Id = 30,
+            Title = "testRecipeHighProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 100.5
+            }
+        };
+        manager.AddRecipe(testRecipeHighProtein);
+
         var result = manager.SearchByIngredient("Apple");
 
         var recipeFound = Assert.Single(result);
@@ -668,9 +693,42 @@ public sealed class RecipeManagerTests
     }
 
     [Fact]
+    public void SearchByIngredient_ExcludesRecipeWithoutIngredients_WhenSearchIsBlank()
+    {
+        var manager = CreateManager();
+
+        var result = manager.SearchByIngredient("");
+        var searchTitleB = manager.SearchByTitle("B");
+
+        var singleResult = Assert.Single(searchTitleB);
+        Assert.Single(result);
+        Assert.DoesNotContain(singleResult, result);
+    }
+
+    [Fact]
+    public void SearchByIngredient_ReturnRecipeOnce_WhenMultipleIngredientsMatch()
+    {
+        var manager = CreateManager();
+        Recipe testRecipe = new()
+        {
+            Id = 30,
+            Title = "testRecipe",
+            Ingredients = ["5 cups of Milk chocolate", "1 Cup of Dark Chocolate"],
+            Instructions = ["First step", "Second step"],
+        };
+        manager.AddRecipe(testRecipe);
+
+        var result = manager.SearchByIngredient("chocolate");
+
+        var recipeFound = Assert.Single(result);
+        Assert.Contains(recipeFound.Ingredients, i => i.Contains("chocolate", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void GetHighestProteinRecipes_ReturnTopRecipesInOrder_ExcludingNullProtein()
     {
         var manager = CreateManager();
+
         Recipe testRecipeHighProtein = new()
         {
             Id = 30,
@@ -697,13 +755,118 @@ public sealed class RecipeManagerTests
         manager.AddRecipe(testRecipeLowProtein);
         
         var result = manager.GetHighestProteinRecipes(3);
+        var resultSingle = manager.GetHighestProteinRecipes(1);
 
         Assert.Equal(2, result.Count);
+        Assert.Single(resultSingle);
         Assert.Equal(100.5, result[0].Nutrition!.ProteinG);
         Assert.Equal(0.5, result[1].Nutrition!.ProteinG);
+        Assert.Equal(100.5, resultSingle[0].Nutrition!.ProteinG);
         Assert.All(result, r => Assert.NotNull(r.Nutrition?.ProteinG));
     }
+
+    [Fact]
+    public void GetHighestProteinRecipes_ReturnEmpty_WhenSearchCountIsZeroOrNegative()
+    {
+        var manager = CreateManager();
+
+        Recipe testRecipe1 = new()
+        {
+            Id = 30,
+            Title = "testRecipe1",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 10
+            }
+        };
+        Recipe testRecipe2 = new()
+        {
+            Id = 40,
+            Title = "testRecipe2",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 20
+            }
+        };
+        manager.AddRecipe(testRecipe1);
+        manager.AddRecipe(testRecipe2);
+   
+        Assert.Empty(manager.GetHighestProteinRecipes(0));
+        Assert.Empty(manager.GetHighestProteinRecipes(-1));
+    }
     
+    [Fact]
+    public void GetHighestProteinRecipes_ReturnList_WhenProteinIsZero()
+    {
+        var manager = CreateManager();
+
+        Recipe testRecipeZeroProtein = new()
+        {
+            Id = 30,
+            Title = "testRecipeZeroProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 0
+            }
+        };
+
+        Assert.True(manager.AddRecipe(testRecipeZeroProtein));  
+        var searchedRecipe = Assert.Single(manager.GetHighestProteinRecipes(1));
+        Assert.Equal(30, searchedRecipe.Id);
+    }
+
+    [Fact]
+    public void GetHighestProteinRecipes_ReturnEmpty_WhenRecipeNutritionOrProteinIsNull()
+    {
+        var manager = CreateManager();
+
+        Recipe testRecipeNullNutrition = new()
+        {
+            Id = 30,
+            Title = "testRecipeNullProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = null
+        };
+
+        Recipe testRecipeNullProtein = new()
+        {
+            Id = 40,
+            Title = "testRecipeLowProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = null,
+                CaloriesKcal = null,
+                FatG = null,
+                CarbohydrateG = null
+            }
+        };
+        Recipe testRecipeHighProtein = new()
+        {
+            Id = 50,
+            Title = "testRecipeLowProtein",
+            Ingredients = ["5 cups of Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 100
+            }
+        };
+        
+        Assert.True(manager.AddRecipe(testRecipeNullNutrition));
+        Assert.True(manager.AddRecipe(testRecipeNullProtein));    
+        Assert.True(manager.AddRecipe(testRecipeHighProtein));
+        Assert.Single(manager.GetHighestProteinRecipes(3));
+    }
+
     [Fact]
     public void AddSavedRecipe_ReturnTrueAndAddRecipe_WhenValidRecipe()
     {
@@ -835,13 +998,44 @@ public sealed class RecipeManagerTests
     }
     
     [Fact]
-    public void SavedRecipesIntegration_SaveAndDeleteManipulation()
+    public void SearchAndSavedRecipesIntegration_SearchRecipesAndProteinAndSaveManipulation()
     {
         var manager = CreateManager();
+        Recipe testRecipeHighProtein = new()
+        {
+            Id = 30,
+            Title = "testRecipeHighProtein",
+            Ingredients = ["5 cups of Sugar", "1kg of Protein Powder"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 1000.5
+            }
+        };
+        Recipe testRecipeLowProtein = new()
+        {
+            Id = 40,
+            Title = "testRecipeLowProtein",
+            Ingredients = ["5 cups of Sugar", "1 cup of Brown Sugar"],
+            Instructions = ["First step", "Second step"],
+            Nutrition = new()
+            {
+                ProteinG = 0.5
+            }
+        }; 
+        manager.AddRecipe(testRecipeHighProtein);
+        manager.AddRecipe(testRecipeLowProtein);
+
+        // Search Recipes by title and ingredients
+        Assert.Equal(2, manager.SearchByTitle("Protein").Count);
+        Assert.Equal(2, manager.SearchByIngredient("Sugar").Count);
+        
+        // Find highest Protein Recipe
+        var bestProtein = Assert.Single(manager.GetHighestProteinRecipes(1));
 
         // save twice, confirm list
         Assert.True(manager.AddSavedRecipe(10));
-        Assert.True(manager.AddSavedRecipe(20));
+        Assert.True(manager.AddSavedRecipe(bestProtein.Id));
         Assert.Equal(2, manager.GetSavedRecipes().Count);
         
         //unsave one, confirm leftovers
@@ -850,10 +1044,14 @@ public sealed class RecipeManagerTests
         Assert.Single(manager.GetSavedRecipes());
 
         //delete recipe and have no more saves
-        Assert.True(manager.IsRecipeSaved(20));
-        Assert.True(manager.RemoveRecipe(20));
-        Assert.False(manager.IsRecipeSaved(20));
+        Assert.True(manager.IsRecipeSaved(bestProtein.Id));
+        Assert.True(manager.RemoveRecipe(bestProtein.Id));
+        Assert.False(manager.IsRecipeSaved(bestProtein.Id));
         Assert.Empty(manager.GetSavedRecipes());
+        var newBestProtein = Assert.Single(manager.GetHighestProteinRecipes(1));
+        Assert.NotEqual(bestProtein.Id, newBestProtein.Id);
+        Assert.Empty(manager.SearchByTitle("HighProtein"));
+        Assert.Single(manager.SearchByIngredient("Sugar"));
     }
 
 }
