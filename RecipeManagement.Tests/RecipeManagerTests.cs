@@ -3,9 +3,6 @@ using RecipeManagement.Core;
 
 namespace RecipeManagement.Tests;
 
-/// <summary>
-/// Example tests from the assignment specification. Add your own tests as you work.
-/// </summary>
 public sealed class RecipeManagerTests
 {
     [Fact]
